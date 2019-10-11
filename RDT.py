@@ -137,7 +137,13 @@ class RDT:
                 self.byte_buffer = self.byte_buffer[length:]
     
     def rdt_3_0_send(self, msg_S):
-        pass
+        # Make the packet
+        p = Packet(self.seq_num, msg_S)
+        # Send the packet
+        self.network.udt_send(p.get_byte_S())
+        # Use helper method to wait for ACK 
+        # And to handle any NAKS/corruption
+        self.handleAck3(p)
         
     def rdt_3_0_receive(self):
         returnString = None
@@ -216,6 +222,57 @@ class RDT:
                             # Resend original packet 
                             self.network.udt_send(packet.get_byte_S())
 
+     # Broken out handling of ACKS, saves repeat code and makes send method simpler
+     # Now handles timeout error
+    def handleAck3(self, packet):
+        # Get the time right after packet is sent
+        sentTime = time.time()
+        # Set the timeout in seconds
+        timeOut = 2
+        byte_stream = self.network.udt_receive()
+        self.byte_buffer += byte_stream
+        # Keep getting packets until ACK is received
+        while True:
+            byte_stream = self.network.udt_receive()
+            self.byte_buffer += byte_stream
+
+            # Check that enough bytes exist to get packet length
+            if len(self.byte_buffer) >= Packet.length_S_length:
+                # Get length of packet
+                pLength = int(self.byte_buffer[0:Packet.length_S_length])
+                # print("Packet Length field is valid")
+
+                # Make sure enough bytes exist in byte buffer to make packet
+                if len(self.byte_buffer) >= pLength:
+                    # print("Packet length is valid")
+                    # Make sure new packet isnt corrupt
+                    # If it is purge buffer of packet and resend original packet
+                    if Packet.corrupt(self.byte_buffer[0:pLength]):
+                        print("Packet is corrupt")
+                        self.byte_buffer = self.byte_buffer[pLength:]
+                        self.network.udt_send(packet.get_byte_S())
+                    # If packet is not corrupt make packet and process
+                    else:
+                        ackPack = Packet.from_byte_S(self.byte_buffer[0:pLength])
+                        print(ackPack.msg_S + " " + str(ackPack.seq_num) + " " + str(self.seq_num))
+                        # Purge buffer of packet
+                        self.byte_buffer = self.byte_buffer[pLength:]
+                        # If the message is an ACK all is good
+                        if ackPack.msg_S == "ACK" and self.seq_num <= ackPack.seq_num:
+                            # Increment seq number
+                            self.seq_num += 1
+                            print("Received ACK")
+                            # Exit since we got ACK
+                            return
+                        else:
+                            # Resend original packet 
+                            self.network.udt_send(packet.get_byte_S())
+            # If no packet has come in after timeout resend
+            else:
+                if time.time() > sentTime + timeOut:
+                    print("Resending due to timeout")
+                    self.network.udt_send(packet.get_byte_S())
+
     def waitForMore(self, ack): #Method for making sure there is no resends. Wait for .1 seconds
         end_time = time.time() + .1
         byte_buffer2 = ''
@@ -263,7 +320,7 @@ if __name__ == '__main__':
     
     rdt = RDT(args.role, args.server, args.port)
     if args.role == 'client':
-        rdt.rdt_2_1_send('MSG_FROM_CLIENT')
+        rdt.rdt_3_0_send('MSG_FROM_CLIENT')
         sleep(2)
         print(rdt.rdt_3_0_receive())
         rdt.disconnect()
@@ -272,7 +329,7 @@ if __name__ == '__main__':
     else:
         sleep(1)
         print(rdt.rdt_3_0_receive())
-        rdt.rdt_2_1_send('MSG_FROM_SERVER')
+        rdt.rdt_3_0_send('MSG_FROM_SERVER')
         rdt.disconnect()
         
 
