@@ -140,7 +140,40 @@ class RDT:
         pass
         
     def rdt_3_0_receive(self):
-        pass
+        returnString = None
+        byteSequence = self.network.udt_receive()
+        self.byte_buffer += byteSequence
+        # keep extracting packets
+        while True:
+            # check if we have enough bytes
+            if (len(self.byte_buffer) < Packet.length_S_length):
+                return returnString   # not enough bytes
+            # extract length of packet
+            length = int(self.byte_buffer[:Packet.length_S_length])
+            if len(self.byte_buffer) < length:
+                return returnString   # not enough bytes to read whole packet
+            
+            # create packet from buffer and add to return string
+
+            # Check for packet corruption, if so send NACK
+            if (Packet.corrupt(self.byte_buffer[0:length])):
+                nackPacket = Packet(self.seq_num, "NACK")
+                self.network.udt_send(nackPacket.get_byte_S()) # create nack and send it
+                # purge byte buffer and await retransmission
+                self.byte_buffer = self.byte_buffer[length:]
+
+            else: # not corrupt
+                packet = Packet.from_byte_S(self.byte_buffer[0:length])
+
+                if packet.seq_num == self.seq_num:      # make sure its the same packet
+                    # add message to return string
+                    returnString = packet.msg_S if (returnString is None) else returnString + packet.msg_S
+                    self.seq_num += 1
+                    ackPacket = Packet(packet.seq_num, "ACK")
+                    self.network.udt_send(ackPacket.get_byte_S())
+                    self.waitForMore(ackPacket)
+                # clear byte buffer
+                self.byte_buffer = self.byte_buffer[length:]
 
     # Broken out handling of ACKS, saves repeat code and makes send method simpler
     def handleAck(self, packet):
@@ -232,13 +265,13 @@ if __name__ == '__main__':
     if args.role == 'client':
         rdt.rdt_2_1_send('MSG_FROM_CLIENT')
         sleep(2)
-        print(rdt.rdt_2_1_receive())
+        print(rdt.rdt_3_0_receive())
         rdt.disconnect()
         
         
     else:
         sleep(1)
-        print(rdt.rdt_2_1_receive())
+        print(rdt.rdt_3_0_receive())
         rdt.rdt_2_1_send('MSG_FROM_SERVER')
         rdt.disconnect()
         
