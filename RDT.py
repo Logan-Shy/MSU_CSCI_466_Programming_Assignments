@@ -173,7 +173,7 @@ class RDT:
                     self.seq_num += 1
                     ackPacket = Packet(packet.seq_num, "ACK")
                     self.network.udt_send(ackPacket.get_byte_S())
-                    self.waitForMore(ackPacket)
+                    self.handlePackets(ackPacket)
                 # clear byte buffer
                 self.byte_buffer = self.byte_buffer[length:]
     
@@ -271,11 +271,11 @@ class RDT:
                     self.seq_num += 1
                     ackPacket = Packet(packet.seq_num, "ACK")
                     self.network.udt_send(ackPacket.get_byte_S())
-                    self.waitForMore(ackPacket)
+                    self.handlePackets(ackPacket)
                 # clear byte buffer
                 self.byte_buffer = self.byte_buffer[length:]
 
-    def waitForMore(self, ack): 
+    def handlePackets(self, ack): 
         # wait a reasonable amount of time before closing the loop.
         timeout = time.time() + .1
         byteBuffer = ''
