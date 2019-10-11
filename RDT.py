@@ -216,34 +216,38 @@ class RDT:
                             # Resend original packet 
                             self.network.udt_send(packet.get_byte_S())
 
-    def waitForMore(self, ack): #Method for making sure there is no resends. Wait for .1 seconds
-        end_time = time.time() + .1
-        byte_buffer2 = ''
-        while (time.time() < end_time):
-            was_duplicate = False
-            bytes2 = self.network.udt_receive()
-            byte_buffer2 += bytes2
+    def waitForMore(self, ack): 
+        # wait a reasonable amount of time before closing the loop.
+        timeout = time.time() + .1
+        byteBuffer = ''
+        while (time.time() < timeout):
+            isDuplicate = False
+            # continue extracting and add to bytebuffer
+            byteSeq = self.network.udt_receive()
+            byteBuffer += byteSeq
 
-            if (len(byte_buffer2) < Packet.length_S_length): #restarts if not enough bytes
-                continue #restart loop
-            length = int(byte_buffer2[:Packet.length_S_length])
-            if (len(byte_buffer2) < length): #Restart if not matching length
-                continue #restart
-
-            if (Packet.corrupt(byte_buffer2[0:length])): #Is the packet corrupt?
-                nack = Packet(self.seq_num, 'NACK') #Create NACK packet.
-                self.network.udt_send(nack.get_byte_S()) #Send
-                byte_buffer2 = '' #Empty the buffer.
-                if (was_duplicate): #Checks for duplicates and adds more time
-                    end_time = end_time + .1
+            if (len(byteBuffer) < Packet.length_S_length): 
+                continue    # restart loop if not enough bytes
+            length = int(byteBuffer[:Packet.length_S_length])
+            if (len(byteBuffer) < length): 
+                continue    # restart loop if length doesn't match defined packet length
+            # Check if the packet is corrupt
+            if (Packet.corrupt(byteBuffer[0:length])): 
+                # if corrupted, create and send nack packet
+                nackPacket = Packet(self.seq_num, 'NACK') 
+                self.network.udt_send(nackPacket.get_byte_S()) 
+                byteBuffer = '' 
+                # if a duplicate is detected, add to timeout
+                if (isDuplicate): 
+                    timeout = timeout + .1
                 continue
             else: # Time expired
-                p2 = Packet.from_byte_S(byte_buffer2[0:length])
-                if (p2.seq_num == self.seq_num - 1): #Check if it was a different packet.
-                    was_duplicate = True
-                    end_time = end_time + .1
+                packet = Packet.from_byte_S(byteBuffer[0:length])
+                if (packet.seq_num == self.seq_num - 1): 
+                    isDuplicate = True
+                    timeout = timeout + .1
                     self.network.udt_send(ack.get_byte_S()) #We don't have to wait anymore send ACK.
-                    byte_buffer2 = ''
+                    byteBuffer = ''
                 else:
                     nack = Packet(self.seq_num, 'NACK')
                     self.network.udt_send(nack.get_byte_S())
