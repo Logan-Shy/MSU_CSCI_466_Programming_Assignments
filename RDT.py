@@ -186,9 +186,8 @@ class RDT:
         # And to handle any NAKS/corruption
         self.handleAck3(p)
 
-
-     # Broken out handling of ACKS, saves repeat code and makes send method simpler
-     # Now handles timeout error
+    # Broken out handling of ACKS, saves repeat code and makes send method simpler
+    # Now handles timeout error
     def handleAck3(self, packet):
         # Get the time right after packet is sent
         sentTime = time.time()
@@ -237,7 +236,6 @@ class RDT:
                 if time.time() > sentTime + timeOut:
                     print("Resending due to timeout")
                     self.network.udt_send(packet.get_byte_S())
-
 
     def rdt_3_0_receive(self):
         returnString = None
