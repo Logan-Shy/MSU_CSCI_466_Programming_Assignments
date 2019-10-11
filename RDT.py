@@ -94,7 +94,39 @@ class RDT:
         pass
         
     def rdt_2_1_receive(self):
-        pass
+        returnString = None
+        byteSequence = self.network.udt_recieve()
+        self.byte_buffer += from_byte_S
+        # keep extracting packets
+        while True:
+            # check if we have enough bytes
+            if (len(self.byte_buffer) < Packet.length_S_length):
+                return returnString   # not enough bytes
+            # extract length of packet
+            length = int(self.byte_buffer[:Packet.length_S_length])
+            if len(self.byte_buffer) < length:
+                return returnString   # not enough bytes to read whole packet
+            # create packet from buffer and add to return string
+            if (Packet.corrupt(self.byte_buffer[:length])):
+                nackPacket = Packet(self.seq_num, "NACK")
+                self.network.udt_send(nackPacket.get_byte_S()) # create nack and send it
+                # purge byte buffer and await retransmission
+                self.byte_buffer = self.byte_buffer[length:]
+
+            else: # not corrupt
+                packet = Packet.get_byte_S(self.byte_buffer[:length])
+
+                if packet.seq_num == self.seq_num:      # make sure its the same packet
+                    # add message to return string
+                    returnString = packet.msg_S if (returnString is None) else returnString + packet.msg_S
+                    ackPacket = Packet.get_byte_S(packet.seq_num, "ACK")
+                    self.seq_num += 1
+                    self.waitformore(ackPacket)
+                # clear byte buffer
+                self.byte_buffer = self.byte_buffer[length:]
+
+                
+                # packet is corrupt
     
     def rdt_3_0_send(self, msg_S):
         pass
