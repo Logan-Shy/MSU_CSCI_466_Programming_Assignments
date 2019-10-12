@@ -134,11 +134,11 @@ class RDT:
                                     return
                                 else:
                                     # Exit timer loop, packets out of order
-                                    print("apparently packets are out of order. Breaking LOOP")
+                                    print("Packet contains an Ack message, but ACKpack.seq_num is not greater than or equal to self.seq_num. Breaking Loop")
                                     break
                             else:
                                     # Exit timer loop, packets out of order
-                                    print("apparently packets are out of order. Breaking LOOP")
+                                    print("Packet does not contain an ACK message. Breaking Loop")
                                     break
             print("Resending due to timeout")
             self.network.udt_send(p.get_byte_S())
@@ -163,7 +163,7 @@ class RDT:
                 self.byte_buffer = self.byte_buffer[length:]
             else:
                 p = Packet.from_byte_S(self.byte_buffer[0:length])
-                if (p.seq_num <= self.seq_num): #Is packet right sequence number.
+                if (p.seq_num == self.seq_num): #Is packet right sequence number.
                     ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
                     self.seq_num = self.seq_num + 1
                     ack = Packet(p.seq_num, 'ACK')
@@ -171,7 +171,6 @@ class RDT:
                     end = time.time() + .2
                     byte_buffer2 = ''
                     while(time.time() < end):
-                        isDuplicate = False
                         bytes2 = self.network.udt_receive()
                         byte_buffer2 += bytes2
                         try:
@@ -186,8 +185,6 @@ class RDT:
                             nack = Packet(self.seq_num, 'NACK')
                             self.network.udt_send(nack.get_byte_S())
                             byte_buffer2 = ''
-                            if(isDuplicate):
-                                end = end + .2
                             continue
                         else:
                             p2 = Packet.from_byte_S(byte_buffer2[0:length])
@@ -198,15 +195,17 @@ class RDT:
                                 ack1 = Packet(p2.seq_num, 'ACK')
                                 self.network.udt_send(ack1.get_byte_S())
                                 byte_buffer2 = ''
-                            else:
-                                nack = Packet(self.seq_num, 'NACK')
-                                self.network.udt_send(nack.get_byte_S())
-                                break
-                else:
+                            # else:
+                            #     print("I think this else is useless. CHANGE MY MIND")
+                            #     nack = Packet(self.seq_num, 'NACK')
+                            #     self.network.udt_send(nack.get_byte_S())
+                            #     break
+                elif p.seq_num <= self.seq_num - 1:
+                    print("Packet sequence number does not match self.seq_num. Sending NACK and Clearing Buffer")
                     nack = Packet(self.seq_num, 'NACK')
                     self.network.udt_send(nack.get_byte_S())
                 self.byte_buffer = self.byte_buffer[length:]
-                
+
 
 if __name__ == '__main__':
     parser =  argparse.ArgumentParser(description='RDT implementation.')
