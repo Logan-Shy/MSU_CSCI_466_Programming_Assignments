@@ -136,13 +136,20 @@ class RDT:
                                     # Exit timer loop, packets out of order
                                     print("Packet contains an Ack message, but ACKpack.seq_num is not greater than or equal to self.seq_num. Breaking Loop")
                                     break
-                            else:
+                            else:   # packet doesn't contain an ACK message
+                                # if sequence is out of order, resend ACK message
+                                if(ackPack.seq_num < self.seq_num):
+                                    print("Packet is a duplicate of previous data. Retransmitting ACK and clearing byte buffer.")
+                                    print("Packet contains: " + str(ackPack.msg_S))
+                                    break
+                                else:
                                     # Exit timer loop, packets out of order
-                                    print("Packet does not contain an ACK message. Breaking Loop")
+                                    print("Packet not out of order, but does not contain an ACK message. Actually contains " + ackPack.msg_S)
+                                    print("Packets sequence number is: " + str(ackPack.seq_num))
+                                    print("which is not less than the current sequence number: " + str(self.seq_num) + "... breaking loop")
                                     break
             print("Resending due to timeout")
             self.network.udt_send(p.get_byte_S())
-            timeout = time.time() + 2
         # Use helper method to wait for ACK 
         # And to handle any NAKS/corruption
         # self.handleAck3(p)
