@@ -11,7 +11,7 @@ import threading
 class Interface:
     ## @param maxsize - the maximum size of the queue storing packets
     def __init__(self, maxsize=0):
-        self.queue = queue.Queue(maxsize);
+        self.queue = queue.Queue(maxsize)
         self.mtu = None
     
     ##get packet from the queue interface
