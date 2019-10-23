@@ -55,9 +55,10 @@ if __name__ == '__main__':
         t.start()
     
     
-    #create some send events    
-    for i in range(3):
-        client.udt_send(2, 'Sample data %d' % i)
+    #Send one large file to be split into smaller packets.   
+    
+    client.udt_send(2, 'This is gonna be one long boyo. Did you know my\
+    father died when I was a little boy?')
     
     
     #give the network sufficient time to transfer all packets before quitting

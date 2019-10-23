@@ -81,10 +81,25 @@ class Host:
     # @param dst_addr: destination address for the packet
     # @param data_S: data being transmitted to the network layer
     def udt_send(self, dst_addr, data_S):
-        p = NetworkPacket(dst_addr, data_S)
-        self.out_intf_L[0].put(p.to_byte_S()) #send packets always enqueued successfully
-        print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
-        
+        # String to send can be done in one packet; make it so
+        if len(data_S) <= 50:
+            p = NetworkPacket(dst_addr, data_S)
+            self.out_intf_L[0].put(p.to_byte_S()) #send packets always enqueued successfully
+            print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
+        # data string is too big; break into smaller packets
+        elif len(data_S) > 50:
+            segmentCount = 0
+            while len(data_S) > 50:
+                segmentCount += 1 # add to segment count
+                p = NetworkPacket(dst_addr, data_S[:49])    # make packet out of first 50 characters
+                self.out_intf_L[0].put(p.to_byte_S())       # and send it
+                print('%s: sending segment %i of packet "%s" on the out interface with mtu=%d' % (self, segmentCount, p, self.out_intf_L[0].mtu))
+                data_S = data_S[49:]    # remove sent string from data string
+            # data string no longer large than MTU; send final packet
+            p = NetworkPacket(dst_addr, data_S)
+            self.out_intf_L[0].put(p.to_byte_S()) # send final packet
+            print('%s: sending final segment of packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
+
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
