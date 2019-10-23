@@ -2,14 +2,8 @@
 Created on Oct 12, 2016
 
 TODO:
-1. Generate large message (80 characters) and modify udt_send to break packets 
+Generate large message (80 characters) and modify udt_send to break packets 
 into smaller packets
-2. modify MTU of second link to 30 (router_A -> server); Extend packet format in 
-networkPacket class to implement segmentation (look at slide/book). Add packet stitching.
-3. Add more hosts and links in simulation class to match given topology, and start them.
-4. In network.py, modify the forward function in the router class to use a router 
-table to send packets to the correct interface (from static to dynamic forwarding).
-5. Extend packet class to allow router to decipher which host the packet arrived from.
 
 @author: mwittie
 '''
