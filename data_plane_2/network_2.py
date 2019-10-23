@@ -35,6 +35,8 @@ class Interface:
 class NetworkPacket:
     ## packet encoding lengths 
     dst_addr_S_length = 5
+    sFlag_length = 1
+    sNum_length = 5
     
     ##@param dst_addr: address of the destination host
     # @param data_S: packet payload
@@ -51,6 +53,8 @@ class NetworkPacket:
     ## convert packet to a byte string for transmission over links
     def to_byte_S(self):
         byte_S = str(self.dst_addr).zfill(self.dst_addr_S_length)
+        byte_S += str(int(self.segmentFlag))
+        byte_S += str(self.segmentNumber).zfill(self.sNum_length)
         byte_S += self.data_S
         return byte_S
     
@@ -59,8 +63,10 @@ class NetworkPacket:
     @classmethod
     def from_byte_S(self, byte_S):
         dst_addr = int(byte_S[0 : NetworkPacket.dst_addr_S_length])
-        data_S = byte_S[NetworkPacket.dst_addr_S_length : ]
-        return self(dst_addr, data_S)
+        segmentFlag = bool(int(byte_S[NetworkPacket.dst_addr_S_length]))
+        segmentNumber = int(byte_S[NetworkPacket.dst_addr_S_length+2 : NetworkPacket.dst_addr_S_length+1+NetworkPacket.sNum_length])
+        data_S = byte_S[NetworkPacket.dst_addr_S_length+1+NetworkPacket.sNum_length: ]
+        return self(dst_addr, data_S, segmentFlag, segmentNumber)
     
 
     
@@ -68,6 +74,8 @@ class NetworkPacket:
 ## Implements a network host for receiving and transmitting data
 class Host:
     
+    packetDict = {}
+
     ##@param addr: address of this node represented as an integer
     def __init__(self, addr):
         self.addr = addr
@@ -98,7 +106,7 @@ class Host:
                 print('%s: sending segment %i of packet "%s" on the out interface with mtu=%d' % (self, segmentCount, p, self.out_intf_L[0].mtu))
                 data_S = data_S[49:]    # remove sent string from data string
             # data string no longer large than MTU; send final packet
-            p = NetworkPacket(dst_addr, data_S, True, segmentCount)
+            p = NetworkPacket(dst_addr, data_S, True, 0)
             self.out_intf_L[0].put(p.to_byte_S()) # send final packet
             print('%s: sending final segment of packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
         
@@ -106,9 +114,19 @@ class Host:
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
         if pkt_S is not None:
-            # See if segmented
+            # See if segmented, if not handle normally
+            # If so throw packets into dict by seg number
             if pkt_S.segmentFlag is True:
-                pass
+                # Check if duplicate
+                if pkt_S.segmentNumber not in self.packetDict:
+                    self.packetDict[pkt_S.segmentNumber] = pkt_S.data_S
+                if pkt_S.segmentNumber == 0:
+                    message = ""
+                    for key in self.packetDict:
+                        if key != 0:
+                            message += self.packetDict[key]
+                    message += self.packetDict[0]
+                    print('%s: received packets and recombined to: "%s" on the in interface' % (self, message))    
             else:
                 print('%s: received packet "%s" on the in interface' % (self, pkt_S))
        
