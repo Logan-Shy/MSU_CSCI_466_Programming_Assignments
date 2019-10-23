@@ -28,12 +28,24 @@ if __name__ == '__main__':
     object_List = [] #keeps track of objects, so we can kill their threads
     
     #create network nodes
-    client = network_3.Host(1)
-    object_List.append(client)
-    server = network_3.Host(2)
-    object_List.append(server)
-    router_a = network_3.Router(name='A', intf_count=1, max_queue_size=router_queue_size)
+    client_1 = network_3.Host(1)
+    client_2 = network_3.Host(2)
+    object_List.append(client_1)
+    object_List.append(client_2)
+
+    server_3 = network_3.Host(3)
+    server_4 = network_3.Host(4)
+    object_List.append(server_3)
+    object_List.append(server_4)
+
+    router_a = network_3.Router(name='A', intf_count=2, max_queue_size=router_queue_size)
+    router_b = network_3.Router(name='B', intf_count=1, max_queue_size=router_queue_size)
+    router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size)
+    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size)
     object_List.append(router_a)
+    object_List.append(router_b)
+    object_List.append(router_c)
+    object_List.append(router_d)
     
     #create a Link Layer to keep track of links between network nodes
     link_layer = link_3.LinkLayer()
@@ -41,15 +53,28 @@ if __name__ == '__main__':
     
     #add all the links
     #link parameters: from_node, from_intf_num, to_node, to_intf_num, mtu
-    link_layer.add_link(link_3.Link(client, 0, router_a, 0, 50))
-    link_layer.add_link(link_3.Link(router_a, 0, server, 0, 50))
-    
+    link_layer.add_link(link_3.Link(client_1, 0, router_a, 0, 50))
+    link_layer.add_link(link_3.Link(client_2, 0, router_a, 1, 50))
+
+    link_layer.add_link(link_3.Link(router_a, 0, router_b, 0, 50))
+    link_layer.add_link(link_3.Link(router_a, 1, router_c, 0, 50))
+
+    link_layer.add_link(link_3.Link(router_b, 0, router_d, 0, 50))
+    link_layer.add_link(link_3.Link(router_c, 0, router_d, 1, 50))
+
+    link_layer.add_link(link_3.Link(router_d, 0, server_3, 0, 50))
+    link_layer.add_link(link_3.Link(router_d, 1, server_4, 0, 50))
     
     #start all the objects
     thread_List = []
-    thread_List.append(threading.Thread(name=client.__str__(), target=client.run))
-    thread_List.append(threading.Thread(name=server.__str__(), target=server.run))
+    thread_List.append(threading.Thread(name=client_1.__str__(), target=client_1.run))
+    thread_List.append(threading.Thread(name=client_2.__str__(), target=client_2.run))
+    thread_List.append(threading.Thread(name=server_3.__str__(), target=server_3.run))
+    thread_List.append(threading.Thread(name=server_4.__str__(), target=server_4.run))
     thread_List.append(threading.Thread(name=router_a.__str__(), target=router_a.run))
+    thread_List.append(threading.Thread(name=router_b.__str__(), target=router_b.run))
+    thread_List.append(threading.Thread(name=router_c.__str__(), target=router_c.run))
+    thread_List.append(threading.Thread(name=router_d.__str__(), target=router_d.run))
     
     thread_List.append(threading.Thread(name="Network", target=link_layer.run))
     
