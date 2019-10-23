@@ -113,7 +113,9 @@ class Host:
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
+        #print("Received info")
         if pkt_S is not None:
+            print("%s: received packet segment #%s" % (self, str(pkt_S.segmentNumber)))
             # See if segmented, if not handle normally
             # If so throw packets into dict by seg number
             if pkt_S.segmentFlag is True:
@@ -121,6 +123,7 @@ class Host:
                 if pkt_S.segmentNumber not in self.packetDict:
                     self.packetDict[pkt_S.segmentNumber] = pkt_S.data_S
                 if pkt_S.segmentNumber == 0:
+                    print("REACHED END OF STREAM")
                     message = ""
                     for key in self.packetDict:
                         if key != 0:
@@ -174,6 +177,8 @@ class Router:
                     # HERE you will need to implement a lookup into the 
                     # forwarding table to find the appropriate outgoing interface
                     # for now we assume the outgoing interface is also i
+
+                    # Packet segementation
                     self.out_intf_L[i].put(p.to_byte_S(), True)
                     print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
                         % (self, p, i, i, self.out_intf_L[i].mtu))
