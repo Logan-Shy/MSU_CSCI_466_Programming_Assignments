@@ -11,3 +11,8 @@ bin/
 lib/python3\.6/
 
 \.pydevproject
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/MSU_CSCI_466_Programming_AssignmentsL.iml
