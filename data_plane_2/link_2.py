@@ -38,6 +38,8 @@ class Link:
         if pkt_S is None:
             return #return if no packet to transfer
         if len(pkt_S) > self.out_intf.mtu:
+            print(len(pkt_S))
+            print(self.out_intf.mtu)
             print('%s: packet "%s" length greater then link mtu (%d)' % (self, pkt_S, self.out_intf.mtu))
             return #return without transmitting if packet too big
         #otherwise transmit the packet
@@ -68,7 +70,7 @@ class LinkLayer:
                 
     ## thread target for the network to keep transmitting data across links
     def run(self):
-        print (threading.currentThread().getName() + ': Starting')
+        print( threading.currentThread().getName() + ': Starting')
         while True:
             #transfer one packet on all the links
             self.transfer()

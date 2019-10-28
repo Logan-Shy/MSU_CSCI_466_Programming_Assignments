@@ -51,7 +51,7 @@ if __name__ == '__main__':
     
     
     #Send one large file to be split into smaller packets and reconstructed.   
-    
+    print("Made it to send")
     client.udt_send(2, 'This is gonna be one long boyo. Did you know my\
     father died when I was a little boy?')
     

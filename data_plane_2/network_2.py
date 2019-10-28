@@ -97,14 +97,14 @@ class Host:
             self.out_intf_L[0].put(p.to_byte_S()) #send packets always enqueued successfully
             print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
         # data string is too big; break into smaller packets
-        elif len(data_S) > 30:
+        elif len(data_S) > 20:
             segmentCount = 0
-            while len(data_S) > 30:
+            while len(data_S) > 20:
                 segmentCount += 1 # add to segment count
-                p = NetworkPacket(dst_addr, data_S[:29], True, segmentCount)    # make packet out of first 50 characters
+                p = NetworkPacket(dst_addr, data_S[:19], True, segmentCount)    # make packet out of first 50 characters
                 self.out_intf_L[0].put(p.to_byte_S())       # and send it
                 print('%s: sending segment %i of packet "%s" on the out interface with mtu=%d' % (self, segmentCount, p, self.out_intf_L[0].mtu))
-                data_S = data_S[29:]    # remove sent string from data string
+                data_S = data_S[19:]    # remove sent string from data string
             # data string no longer large than MTU; send final packet
             p = NetworkPacket(dst_addr, data_S, True, 0)
             self.out_intf_L[0].put(p.to_byte_S()) # send final packet
@@ -113,8 +113,10 @@ class Host:
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
-        #print("Received info")
         if pkt_S is not None:
+            print()
+            print("Received info")
+            print(pkt_S)
             print("%s: received packet segment #%s" % (self, str(pkt_S.segmentNumber)))
             # See if segmented, if not handle normally
             # If so throw packets into dict by seg number
