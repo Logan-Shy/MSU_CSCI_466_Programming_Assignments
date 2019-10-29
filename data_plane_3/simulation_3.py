@@ -40,10 +40,10 @@ if __name__ == '__main__':
     object_List.append(server_3)
     object_List.append(server_4)
 
-    router_a = network_3.Router(name='A', intf_count=2, max_queue_size=router_queue_size forward_table=fTable_A_D)
-    router_b = network_3.Router(name='B', intf_count=1, max_queue_size=router_queue_size forward_table=fTable_C_B)
-    router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size forward_table=fTable_C_B)
-    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size forward_table=fTable_A_D)
+    router_a = network_3.Router(name='A', intf_count=2, max_queue_size=router_queue_size, forward_table=fTable_A_D)
+    router_b = network_3.Router(name='B', intf_count=1, max_queue_size=router_queue_size, forward_table=fTable_C_B)
+    router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size, forward_table=fTable_C_B)
+    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size, forward_table=fTable_A_D)
     object_List.append(router_a)
     object_List.append(router_b)
     object_List.append(router_c)
@@ -86,7 +86,8 @@ if __name__ == '__main__':
     
     #create some send events    
     for i in range(3):
-        client.udt_send(2, 'Sample data %d' % i)
+        client_1.udt_send(2, 'Sample data %d' % i, 0)
+        client_2.udt_send(2, 'Sample data %d' % i, 1)
     
     
     #give the network sufficient time to transfer all packets before quitting

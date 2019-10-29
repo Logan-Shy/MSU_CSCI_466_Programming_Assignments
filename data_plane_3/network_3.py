@@ -80,6 +80,7 @@ class Host:
     ## create a packet and enqueue for transmission
     # @param dst_addr: destination address for the packet
     # @param data_S: data being transmitted to the network layer
+    # @param intf_N: data stream for information to be sent on
     def udt_send(self, dst_addr, data_S, intf_N):
         p = NetworkPacket(dst_addr, data_S)
         self.out_intf_L[intf_N].put(p.to_byte_S()) #send packets always enqueued successfully
