@@ -55,7 +55,7 @@ class NetworkPacket:
         byte_S = str(self.dst_addr).zfill(self.dst_addr_S_length)
         byte_S += str(int(self.segmentFlag))
         byte_S += str(self.segmentNumber).zfill(self.sNum_length)
-        byte_S += self.data_S
+        byte_S += str(self.data_S)
         return byte_S
     
     ## extract a packet object from a byte string
@@ -73,7 +73,7 @@ class NetworkPacket:
 
 ## Implements a network host for receiving and transmitting data
 class Host:
-    
+    segment_list = []
     packetDict = {}
 
     ##@param addr: address of this node represented as an integer
@@ -109,32 +109,31 @@ class Host:
             p = NetworkPacket(dst_addr, data_S, True, 0)
             self.out_intf_L[0].put(p.to_byte_S()) # send final packet
             print('%s: sending final segment of packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
-        
+
+    def reconstruct(self, segments, id):
+        originalPkt = ''
+        for segment in segments:
+            #Check segment ID to prevent mismatches
+            if segment[6] == id:
+                #merge all segments
+                originalPkt += segment[11:]
+        return originalPkt
+
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
         if pkt_S is not None:
-            print()
-            print("Received info")
-            print(pkt_S)
-            print("%s: received packet segment #%s" % (self, str(pkt_S.segmentNumber)))
-            # See if segmented, if not handle normally
-            # If so throw packets into dict by seg number
-            if pkt_S.segmentFlag is True:
-                # Check if duplicate
-                if pkt_S.segmentNumber not in self.packetDict:
-                    self.packetDict[pkt_S.segmentNumber] = pkt_S.data_S
-                if pkt_S.segmentNumber == 0:
-                    print("REACHED END OF STREAM")
-                    message = ""
-                    for key in self.packetDict:
-                        if key != 0:
-                            message += self.packetDict[key]
-                    message += self.packetDict[0]
-                    print('%s: received packets and recombined to: "%s" on the in interface' % (self, message))    
-            else:
-                print('%s: received packet "%s" on the in interface' % (self, pkt_S))
-       
+            print('%s: received packet "%s"' % (self, pkt_S))
+            #Check to see if packet is a segment
+            if pkt_S[5] == '1':
+                self.segment_list.append(pkt_S)
+                #check for final packet
+                if pkt_S[7] == pkt_S[9] and pkt_S[8] == pkt_S[10]:
+                    #reconstruct original string
+                    original = self.reconstruct(self.segment_list, pkt_S[6])
+                    p = NetworkPacket(pkt_S[:5], 0, pkt_S[6] + '0000', original)
+                    print('%s: reconstructed packet "%s"' % (self, p.to_byte_S()))
+
     ## thread target for the host to keep receiving data
     def run(self):
         print (threading.currentThread().getName() + ': Starting')
