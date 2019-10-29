@@ -26,8 +26,8 @@ simulation_time = 1 #give the network sufficient time to transfer all packets be
 
 if __name__ == '__main__':
     object_List = [] #keeps track of objects, so we can kill their threads
-    fTable_A_D = [0, 1] # define dictionaries to hold our routing table information
-    fTable_C_B = [0]
+    fTable_A_D = {3:0, 4:1} # define dictionaries to hold our routing table information
+    fTable_C_B = {3:0, 4:0}
 
     #create network nodes
     client_1 = network_3.Host(1)
@@ -86,8 +86,8 @@ if __name__ == '__main__':
     
     #create some send events    
     for i in range(3):
-        client_1.udt_send(2, 'Sample data %d' % i, 0)
-        client_2.udt_send(2, 'Sample data %d' % i, 1)
+        client_1.udt_send(3, 'Sample data %d' % i)
+        client_2.udt_send(4, 'Sample data %d' % i)
     
     
     #give the network sufficient time to transfer all packets before quitting
