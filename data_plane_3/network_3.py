@@ -83,15 +83,14 @@ class Host:
     def udt_send(self, dst_addr, data_S):
         p = NetworkPacket(dst_addr, data_S)
         self.out_intf_L[0].put(p.to_byte_S()) #send packets always enqueued successfully
-        print('%s: sending packet "%s" on the out interface channel %d with mtu=%d' % (self, p, 0, self.out_intf_L[0].mtu))
+        print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
         
     ## receive packet from the network layer
     def udt_receive(self):
         # get length of interfaces to receive on recieve packets on those interfaces
-        for i in range(0, len(self.in_intf_L)):
-            pkt_S = self.in_intf_L[i].get()
-            if pkt_S is not None:
-                print('%s: received packet "%s" on the in interface channel %d' % (self, pkt_S, i))
+        pkt_S = self.in_intf_L[0].get()
+        if pkt_S is not None:
+            print('%s: received packet "%s" on the in interface' % (self, pkt_S))
        
     ## thread target for the host to keep receiving data
     def run(self):
