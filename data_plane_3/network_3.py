@@ -80,16 +80,18 @@ class Host:
     ## create a packet and enqueue for transmission
     # @param dst_addr: destination address for the packet
     # @param data_S: data being transmitted to the network layer
-    def udt_send(self, dst_addr, data_S):
+    def udt_send(self, dst_addr, data_S, intf_N):
         p = NetworkPacket(dst_addr, data_S)
-        self.out_intf_L[0].put(p.to_byte_S()) #send packets always enqueued successfully
-        print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
+        self.out_intf_L[intf_N].put(p.to_byte_S()) #send packets always enqueued successfully
+        print('%s: sending packet "%s" on the out interface channel %d with mtu=%d' % (self, p, intf_N, self.out_intf_L[intf_N].mtu))
         
     ## receive packet from the network layer
     def udt_receive(self):
-        pkt_S = self.in_intf_L[0].get()
-        if pkt_S is not None:
-            print('%s: received packet "%s" on the in interface' % (self, pkt_S))
+        # get length of interfaces to receive on recieve packets on those interfaces
+        for i in range(0, len(self.in_intf_L)):
+            pkt_S = self.in_intf_L[i].get()
+            if pkt_S is not None:
+                print('%s: received packet "%s" on the in interface channel %d' % (self, pkt_S, i))
        
     ## thread target for the host to keep receiving data
     def run(self):
@@ -110,12 +112,13 @@ class Router:
     ##@param name: friendly router name for debugging
     # @param intf_count: the number of input and output interfaces 
     # @param max_queue_size: max queue length (passed to Interface)
-    def __init__(self, name, intf_count, max_queue_size):
+    def __init__(self, name, intf_count, max_queue_size, forward_table):
         self.stop = False #for thread termination
         self.name = name
         #create a list of interfaces
         self.in_intf_L = [Interface(max_queue_size) for _ in range(intf_count)]
         self.out_intf_L = [Interface(max_queue_size) for _ in range(intf_count)]
+        self.forward_table = forward_table
 
     ## called when printing the object
     def __str__(self):

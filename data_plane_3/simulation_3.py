@@ -3,7 +3,7 @@ Created on Oct 12, 2016
 
 TODO:
 
-1. Add more hosts and links in simulation class to match given topology, and start them.
+X. Add more hosts and links in simulation class to match given topology, and start them.
 
 2. In network.py, modify the forward function in the router class to use a routing 
 table to send packets to the correct interface (from static to dynamic forwarding).
@@ -26,7 +26,9 @@ simulation_time = 1 #give the network sufficient time to transfer all packets be
 
 if __name__ == '__main__':
     object_List = [] #keeps track of objects, so we can kill their threads
-    
+    fTable_A_D = [0, 1] # define dictionaries to hold our routing table information
+    fTable_C_B = [0]
+
     #create network nodes
     client_1 = network_3.Host(1)
     client_2 = network_3.Host(2)
@@ -38,10 +40,10 @@ if __name__ == '__main__':
     object_List.append(server_3)
     object_List.append(server_4)
 
-    router_a = network_3.Router(name='A', intf_count=2, max_queue_size=router_queue_size)
-    router_b = network_3.Router(name='B', intf_count=1, max_queue_size=router_queue_size)
-    router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size)
-    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size)
+    router_a = network_3.Router(name='A', intf_count=2, max_queue_size=router_queue_size forward_table=fTable_A_D)
+    router_b = network_3.Router(name='B', intf_count=1, max_queue_size=router_queue_size forward_table=fTable_C_B)
+    router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size forward_table=fTable_C_B)
+    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size forward_table=fTable_A_D)
     object_List.append(router_a)
     object_List.append(router_b)
     object_List.append(router_c)
