@@ -1,3 +1,4 @@
+# coding: utf-8
 import queue
 import threading
 
@@ -141,7 +142,10 @@ class Router:
         #save neighbors and interfeces on which we connect to them
         self.cost_D = cost_D    # {neighbor: {interface: cost}}
         #TODO: set up the routing table for connected hosts
-        self.rt_tbl_D = {}      # {destination: {router: cost}}
+        self.rt_tbl_D = {"H1": {"RA": 1, "RB": 2},\
+                        "H2": {"RA": 4, "RB": 3}, \
+                        "RA": {"RA": 0, "RB": 1}, \
+                        "RB": {"RA": 1, "RB": 0}} 
         print('%s: Initialized routing table' % self)
         self.print_routes()
     
@@ -150,6 +154,20 @@ class Router:
     def print_routes(self):
         #TODO: print the routes as a two dimensional table
         print(self.rt_tbl_D)
+        print("╒══════╤══════╤══════╕")
+        print("|| "+ self.name +" ||", end="")
+        for router in list(self.rt_tbl_D.values())[0]:
+            print("  " + router +"  |", end="")
+        print("")
+        print("╞══════╪══════╪══════╡")
+        for destination in self.rt_tbl_D:
+            print("|  " + destination + "  |", end="")
+            routers = self.rt_tbl_D[destination]
+            for router in routers:
+                print("   " + str(routers[router]) + "  |", end="")
+            print("")
+        print("╘══════╧══════╧══════╛")
+
 
 
     ## called when printing the object
