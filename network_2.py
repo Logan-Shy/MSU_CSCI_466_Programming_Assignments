@@ -1,6 +1,7 @@
 # coding: utf-8
 import queue
 import threading
+import time
 
 
 ## wrapper class for a queue of packets
@@ -203,6 +204,31 @@ class Router:
                     raise Exception('%s: Unknown packet type in packet %s' % (self, p))
             
 
+    # Cost function for routing
+    # Takes in a packet, and incoming interface
+    # Returns the interface to send on
+    def getCost(self, p, i):
+        # Get destination dict from self
+        dest = p.distance
+        # If dest is a neighbor, send it
+        if dest in self.cost_D:
+            return(dest)
+        # If dest is not a neighbor calculate paths
+        else:
+            # Find router with cheapest cost to destination, and work backwards until we hit 
+            # current router
+            routers = self.rt_tbl_D[dest]
+            routerWLowestCost = ""
+            lcost = 50
+            #print(routers)
+            for router in routers:
+                cost = routers[router]
+                if int(cost) < lcost:
+                    routerWLowestCost = router
+                    lcost = int(cost)
+            return(routerWLowestCost)
+                    
+
     ## forward the packet according to the routing table
     #  @param p Packet to forward
     #  @param i Incoming interface number for packet p
@@ -211,9 +237,21 @@ class Router:
             # TODO: Here you will need to implement a lookup into the 
             # forwarding table to find the appropriate outgoing interface
             # for now we assume the outgoing interface is 1
-            self.intf_L[1].put(p.to_byte_S(), 'out', True)
+
+            # Packet knows destination
+            # Router has table showing proper interface for transmission
+            # Router also knows costs to transmit
+            # TODO: Cost function to determine route?
+            # Get proper interface to send on
+            routerToUse = self.getCost(p, i)
+            dictT = self.cost_D[routerToUse]
+            inter = 0
+            if i == 0:
+                inter = 1
+            print("Cost of %d to jump to %s" % (dictT[inter], routerToUse))
+            self.intf_L[inter].put(p.to_byte_S(), 'out', True)
             print('%s: forwarding packet "%s" from interface %d to %d' % \
-                (self, p, i, 1))
+                (self, p, i, inter))
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
             pass
