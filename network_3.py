@@ -211,7 +211,7 @@ class Router:
         # Get destination dict from self
         dest = p.distance
         # If dest is a neighbor, send it
-        if dest in self.cost_D:
+        if dest in self.cost_D.keys():
             return(dest)
         # If dest is not a neighbor calculate paths
         else:
@@ -220,12 +220,11 @@ class Router:
             routers = self.rt_tbl_D[dest]
             routerWLowestCost = ""
             lcost = 50
-            #print(routers)
             for router in routers:
                 cost = routers[router]
-                if int(cost) < lcost:
+                if cost < lcost:
                     routerWLowestCost = router
-                    lcost = int(cost)
+                    lcost = cost
             return(routerWLowestCost)
                     
 
@@ -245,10 +244,9 @@ class Router:
             # Get proper interface to send on
             routerToUse = self.getCost(p, i)
             dictT = self.cost_D[routerToUse]
-            inter = 0
-            if i == 0:
-                inter = 1
-            print("Cost of %d to jump to %s" % (dictT[inter], routerToUse))
+            print(dictT)
+            inter, cost = dictT.popitem()
+            print("Cost of %d to jump to %s from %s" % (cost, routerToUse, self.name))
             self.intf_L[inter].put(p.to_byte_S(), 'out', True)
             print('%s: forwarding packet "%s" from interface %d to %d' % \
                 (self, p, i, inter))

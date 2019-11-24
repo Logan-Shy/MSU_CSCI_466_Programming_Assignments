@@ -6,7 +6,7 @@ import sys
 
 ##configuration parameters
 router_queue_size = 0 #0 means unlimited
-simulation_time = 4   #give the network sufficient time to execute transfers
+simulation_time = 8   #give the network sufficient time to execute transfers
 
 if __name__ == '__main__':
     object_L = [] #keeps track of objects, so we can kill their threads at the end
@@ -72,12 +72,10 @@ if __name__ == '__main__':
             obj.print_routes()
 
     #send packet from host 1 to host 2
-    host_1.udt_send('H2', 'MESSAGE_FROM_H1')
+    host_1.udt_send('H2', 'Message from H1')
     sleep(simulation_time)
-
-    #send reply message from host 2 to host 1
-    # host_2.udt_send('H1', 'REPLY_MSG_FROM_H2')
-    # sleep(simulation_time)
+    host_2.udt_send('H1', 'Message from H2')
+    sleep(simulation_time)
     
     
     #join all threads
@@ -87,8 +85,9 @@ if __name__ == '__main__':
         t.join()
         
     print("All simulation threads joined")
-    print(router_a.rt_tbl_D)
-    print()
-    print(router_b.rt_tbl_D)
+    router_a.print_routes()
+    router_b.print_routes()
+    router_c.print_routes()
+    router_d.print_routes()
     
     #router_a.print_routes()
