@@ -248,7 +248,7 @@ class Router:
             inter = 0
             if i == 0:
                 inter = 1
-            print("Cost of %d to jump to %s" % (dictT[inter], routerToUse))
+            print("Cost of %d to jump to %s from %s" % (dictT[inter], routerToUse, self.name))
             self.intf_L[inter].put(p.to_byte_S(), 'out', True)
             print('%s: forwarding packet "%s" from interface %d to %d' % \
                 (self, p, i, inter))
