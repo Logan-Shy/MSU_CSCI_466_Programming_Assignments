@@ -60,6 +60,10 @@ if __name__ == '__main__':
     host_1.udt_send('H2', 'MESSAGE_FROM_H1')
     host_2.udt_send('H1', "Message from H2")
     sleep(simulation_time)
+
+    #send reply message from host 2 to host 1
+    # host_2.udt_send('H1', 'REPLY_MSG_FROM_H2')
+    # sleep(simulation_time)
     
     
     #join all threads
