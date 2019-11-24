@@ -4,6 +4,8 @@ import threading
 
 
 ## wrapper class for a queue of packets
+from pandas._libs import json
+
 class Interface:
     ## @param maxsize - the maximum size of the queue storing packets
     def __init__(self, maxsize=0):
@@ -43,14 +45,14 @@ class Interface:
 ## Implements a network layer packet.
 class NetworkPacket:
     ## packet encoding lengths 
-    dst_S_length = 5
+    distance_S_length = 5
     prot_S_length = 1
     
-    ##@param dst: address of the destination host
+    ##@param distance: address of the destination host
     # @param data_S: packet payload
     # @param prot_S: upper layer protocol for the packet (data, or control)
-    def __init__(self, dst, prot_S, data_S):
-        self.dst = dst
+    def __init__(self, distance, prot_S, data_S):
+        self.distance = distance
         self.data_S = data_S
         self.prot_S = prot_S
         
@@ -60,7 +62,7 @@ class NetworkPacket:
         
     ## convert packet to a byte string for transmission over links
     def to_byte_S(self):
-        byte_S = str(self.dst).zfill(self.dst_S_length)
+        byte_S = str(self.distance).zfill(self.distance_S_length)
         if self.prot_S == 'data':
             byte_S += '1'
         elif self.prot_S == 'control':
@@ -74,16 +76,16 @@ class NetworkPacket:
     # @param byte_S: byte string representation of the packet
     @classmethod
     def from_byte_S(self, byte_S):
-        dst = byte_S[0 : NetworkPacket.dst_S_length].strip('0')
-        prot_S = byte_S[NetworkPacket.dst_S_length : NetworkPacket.dst_S_length + NetworkPacket.prot_S_length]
+        distance = byte_S[0 : NetworkPacket.distance_S_length].strip('0')
+        prot_S = byte_S[NetworkPacket.distance_S_length : NetworkPacket.distance_S_length + NetworkPacket.prot_S_length]
         if prot_S == '1':
             prot_S = 'data'
         elif prot_S == '2':
             prot_S = 'control'
         else:
             raise('%s: unknown prot_S field: %s' %(self, prot_S))
-        data_S = byte_S[NetworkPacket.dst_S_length + NetworkPacket.prot_S_length : ]        
-        return self(dst, prot_S, data_S)
+        data_S = byte_S[NetworkPacket.distance_S_length + NetworkPacket.prot_S_length : ]        
+        return self(distance, prot_S, data_S)
     
 
     
@@ -102,10 +104,10 @@ class Host:
         return self.addr
        
     ## create a packet and enqueue for transmission
-    # @param dst: destination address for the packet
+    # @param distance: destination address for the packet
     # @param data_S: data being transmitted to the network layer
-    def udt_send(self, dst, data_S):
-        p = NetworkPacket(dst, 'data', data_S)
+    def udt_send(self, distance, data_S):
+        p = NetworkPacket(distance, 'data', data_S)
         print('%s: sending packet "%s"' % (self, p))
         self.intf_L[0].put(p.to_byte_S(), 'out') #send packets always enqueued successfully
         
@@ -142,32 +144,40 @@ class Router:
         #save neighbors and interfeces on which we connect to them
         self.cost_D = cost_D    # {neighbor: {interface: cost}}
         #TODO: set up the routing table for connected hosts
-        self.rt_tbl_D = {"H1": {"RA": 1, "RB": 2},\
-                        "H2": {"RA": 4, "RB": 3}, \
-                        "RA": {"RA": 0, "RB": 1}, \
-                        "RB": {"RA": 1, "RB": 0}} 
+        self.rt_tbl_D = {}  # {destination: {router: cost}}
+        for neighbor in self.cost_D:
+            for interface in self.cost_D[neighbor]:
+                row = {}
+                row[self.name] = self.cost_D[neighbor][interface]
+                self.rt_tbl_D[neighbor] = row
+                break
+
+        self.rt_tbl_D[self.name] = {}
+        self.rt_tbl_D[self.name][self.name] = 0
+
         print('%s: Initialized routing table' % self)
         self.print_routes()
-    
-        
     ## Print routing table
     def print_routes(self):
-        #TODO: print the routes as a two dimensional table
+        # TODO: print the routes as a two dimensional table
         print(self.rt_tbl_D)
-        print("╒══════╤══════╤══════╕")
-        print("|| "+ self.name +" ||", end="")
-        for router in list(self.rt_tbl_D.values())[0]:
-            print("  " + router +"  |", end="")
+        print("╒══════"+"╤══════"*(len(self.rt_tbl_D)-1)+"╤══════╕")
+        print("|  " + self.name + "  |", end="")
+        for router in (self.rt_tbl_D):
+            print("  " + router + "  |", end="")
         print("")
-        print("╞══════╪══════╪══════╡")
+        print("╞══════"+"╪══════"*(len(self.rt_tbl_D)-1)+"╪══════╡")
+        routers = {}
         for destination in self.rt_tbl_D:
-            print("|  " + destination + "  |", end="")
-            routers = self.rt_tbl_D[destination]
-            for router in routers:
-                print("   " + str(routers[router]) + "  |", end="")
+            for val in self.rt_tbl_D[destination]:
+                routers.setdefault(val, [])
+                routers[val].append(self.rt_tbl_D[destination][val])
+        for val in routers:
+            print("|  " + val + "  |", end="")
+            for i in routers[val]:
+                print("  ", i, " |", end="")
             print("")
-        print("╘══════╧══════╧══════╛")
-
+        print("╘══════"+"╧══════"*(len(self.rt_tbl_D)-1)+"╧══════╛")
 
 
     ## called when printing the object
@@ -213,8 +223,16 @@ class Router:
     # @param i Interface number on which to send out a routing update
     def send_routes(self, i):
         # TODO: Send out a routing table update
-        #create a routing table update packet
-        p = NetworkPacket(0, 'control', 'DUMMY_ROUTING_TABLE')
+        distVector = {}
+        for distance in self.rt_tbl_D:
+            for router in self.rt_tbl_D[distance]:
+                if (router == self.name):
+                    distVector[distance] = {}
+                    distVector[distance][router] = self.rt_tbl_D[distance][router]
+
+        msg = json.dumps(distVector)
+        p = NetworkPacket(0, 'control', msg)
+        print("name: %s, msg: %s" % (self.name, msg))
         try:
             print('%s: sending routing update "%s" from interface %d' % (self, p, i))
             self.intf_L[i].put(p.to_byte_S(), 'out', True)
@@ -228,6 +246,32 @@ class Router:
     def update_routes(self, p, i):
         #TODO: add logic to update the routing tables and
         # possibly send out routing updates
+        distVector = json.loads(p.data_S) # {destination: {router: cost}}
+        for distance in distVector:
+            for router in distVector[distance]:
+                if distance not in self.rt_tbl_D:
+                    self.rt_tbl_D[distance] = {}
+                self.rt_tbl_D[distance][router] = distVector[distance][router]
+        updated = False
+        for distance in self.rt_tbl_D:
+            if distance == self.name:
+                continue
+            minCost = 999
+            if self.name in self.rt_tbl_D[distance]:
+                minCost = self.rt_tbl_D[distance][self.name]
+            for router in self.rt_tbl_D[distance]:
+                cost = 0
+                if router == self.name:
+                    cost += self.rt_tbl_D[distance][router]
+                else:
+                    cost += self.rt_tbl_D[router][self.name] + self.rt_tbl_D[distance][router]
+                if cost < minCost:
+                    updated = True
+                    minCost = cost
+            self.rt_tbl_D[distance][self.name] = minCost
+        if updated:
+            for i in range(0, len(self.intf_L)):
+                self.send_routes(i)
         print('%s: Received routing update %s from interface %d' % (self, p, i))
 
                 
