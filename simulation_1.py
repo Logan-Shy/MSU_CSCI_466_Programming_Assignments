@@ -52,6 +52,9 @@ if __name__ == '__main__':
     router_a.send_routes(1) #one update starts the routing process
     sleep(simulation_time)  #let the tables converge
     print("Converged routing tables")
+    router_a.print_routes()
+    router_b.print_routes()
+
     for obj in object_L:
         if str(type(obj)) == "<class 'network.Router'>":
             obj.print_routes()
